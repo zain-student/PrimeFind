@@ -9,17 +9,23 @@ import {
   Image,
   useColorScheme,
   TextInput,
+  ActivityIndicator,
   ScrollView,
+  ToastAndroid,
 } from "react-native";
+import axios from "axios";
+import { Ip } from "../../constants";
+import { getToken } from "../components/colors/AuthFunctions";
 import { getProducts } from "../services/ProductsApi";
 import { getCategories } from "../services/Categories";
 import Colors from "../components/colors/Colors";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
-const HomeScreen = ({ navigation }) => {
+const HomeScreen = ({ navigation, cart, setCart }) => {
   const [products, setProducts] = useState([]);
   const [productCategories, setProductCategories] = useState([]);
   const [searchText, setSearchText] = useState("");
   const [filteredData, setFilteredData] = useState(data);
+  const [isLoading, setIsLoading] = useState(false);
   const colorScheme = useColorScheme();
   const data = ["Apple", "Mango", "Onion", "Banana"];
   const itemsCategories = [
@@ -46,19 +52,89 @@ const HomeScreen = ({ navigation }) => {
   ];
   useEffect(() => {
     const fetchProducts = async () => {
-      const data = await getProducts();
-      setProducts(data);
+      setIsLoading(true);
+      try {
+        const data = await getProducts();
+        setProducts(data);
+      } catch (error) {
+        ToastAndroid.show(error, ToastAndroid.SHORT);
+      } finally {
+        setIsLoading(false);
+      }
     };
     fetchProducts();
   }, []);
+
   useEffect(() => {
     const fetchCategories = async () => {
+      // setIsLoading(true);
       const data = await getCategories();
       setProductCategories(data);
     };
     fetchCategories();
   }, []);
+  const isLoggedIn = async () => {
+    const token = await getToken();
+    if (token) {
+      return true;
+    }
+    return false;
+  };
+  const addToCart = async (product) => {
+    const LoggedIn = await isLoggedIn();
+    if (!LoggedIn) {
+      console.log(LoggedIn);
+      navigation.navigate("Login");
+      return;
+    }
 
+    const { image, title, price, description, rating, category } = product;
+    const quantity = 1;
+    try {
+      setIsLoading(true);
+      const token = await getToken();
+
+      const res = await axios.post(
+        `http://${Ip}/cart/add`,
+        {
+          image,
+          title,
+          price,
+          description,
+          rating,
+          category,
+          quantity,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      // console.log(res);
+      if (res.status == 200) {
+        const item = res.data;
+        setCart([...cart, item]);
+        ToastAndroid.show("Successfully Added", ToastAndroid.SHORT);
+
+        // const to = await saveToken(res.data);
+        console.log(res.data); // Handle response data
+        // navigation.navigate("HomeScreen");
+      }
+
+      // const sv = await getToken();
+      // console.log("sved tken is:", sv);
+    } catch (error) {
+      ToastAndroid.show(
+        error.response?.data || error.message,
+        ToastAndroid.SHORT
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
   const renderItem = ({ item }) => (
     <View style={styles.card}>
       <TouchableOpacity
@@ -72,11 +148,10 @@ const HomeScreen = ({ navigation }) => {
       </TouchableOpacity>
       <TouchableOpacity
         style={styles.cartAdd}
-        onPress={() =>
-          navigation.navigate("Cart", {
-            product: item,
-            quantity: 1,
-          })
+        onPress={
+          () => addToCart(item)
+
+          // quantity: 1,
         }>
         <Icon name="cart-plus" size={30} color="red" />
       </TouchableOpacity>
@@ -114,33 +189,44 @@ const HomeScreen = ({ navigation }) => {
           backgroundColor="rgba(5,4,5,0.4)"
           translucent={true}
         />
-        <TextInput
-          // ref="searchBar"
-          placeholder="Search...."
-          placeholderTextColor={"#000"}
-          style={styles.searchBar}
-          value={searchText}
-          onChangeText={handleSearch}
-          // onChangeText={...}
-          // onSearchButtonPress={...}
-          // onCancelButtonPress={...}
-        />
-        <Text style={{ color: "#000", fontSize: 20 }}>Categories</Text>
-        {/* <ScrollView style={styles.categories} horizontal={true}> */}
-        <FlatList
-          data={itemsCategories}
-          horizontal={true}
-          renderItem={categories}
-          keyExtractor={(item) => item.id.toString()}
-        />
-        {/* </ScrollView> */}
-        <Text style={{ color: "#000", fontSize: 20 }}>SHOP BEST SELLERS</Text>
-        <FlatList
-          data={products}
-          renderItem={renderItem}
-          numColumns={2}
-          keyExtractor={(item) => item.id.toString()}
-        />
+        {isLoading ? (
+          <View style={styles.loaderContainer}>
+            <ActivityIndicator size={"large"} color="#4CAF50" />
+            <Text style={styles.loaderText}>Loading...</Text>
+          </View>
+        ) : (
+          <>
+            <TextInput
+              // ref="searchBar"
+              placeholder="Search...."
+              placeholderTextColor={"#000"}
+              style={styles.searchBar}
+              value={searchText}
+              onChangeText={handleSearch}
+              // onChangeText={...}
+              // onSearchButtonPress={...}
+              // onCancelButtonPress={...}
+            />
+            <Text style={{ color: "#000", fontSize: 20 }}>Categories</Text>
+            {/* <ScrollView style={styles.categories} horizontal={true}> */}
+            <FlatList
+              data={itemsCategories}
+              horizontal={true}
+              renderItem={categories}
+              keyExtractor={(item) => item.id.toString()}
+            />
+            {/* </ScrollView> */}
+            <Text style={{ color: "#000", fontSize: 20 }}>
+              SHOP BEST SELLERS
+            </Text>
+            <FlatList
+              data={products}
+              renderItem={renderItem}
+              numColumns={2}
+              keyExtractor={(item) => item.id.toString()}
+            />
+          </>
+        )}
       </View>
     </>
   );
@@ -151,7 +237,23 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
     backgroundColor: Colors.backgroundColorLight,
+    justifyContent: "center",
     // backgroundColor: "black",
+  },
+  loaderContainer: {
+    width: 120,
+    height: 120,
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    elevation: 5,
+    alignSelf: "center",
+    // alignContent: "center",
+  },
+  loaderText: {
+    fontSize: 18,
   },
   searchBar: {
     height: 40,

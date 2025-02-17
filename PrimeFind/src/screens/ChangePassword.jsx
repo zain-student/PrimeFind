@@ -73,6 +73,7 @@ const ChangePassword = ({ navigation, route }) => {
           </Text>
           <TextInput
             placeholder="New Password"
+            placeholderTextColor="grey"
             secureTextEntry
             style={styles.input}
             value={newPassword}
@@ -131,7 +132,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: 18,
     marginBottom: 20,
-    backgroundColor: "white",
+    // backgroundColor: "white",
   },
   resetButton: {
     width: 200,

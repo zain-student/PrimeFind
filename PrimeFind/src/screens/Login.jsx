@@ -9,6 +9,7 @@ import {
   ImageBackground,
   ToastAndroid,
   ScrollView,
+  ActivityIndicator,
 } from "react-native";
 import React, { useState } from "react";
 import Colors from "../components/colors/Colors";
@@ -21,7 +22,7 @@ const Login = ({ navigation }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [secureText, setSecureText] = useState(true);
-
+  const [isLoading, setIsLoading] = useState(false);
   //Login Validation
   const loginValidation = () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -42,17 +43,19 @@ const Login = ({ navigation }) => {
   };
   const LoginCall = async () => {
     try {
+      console.log("Login");
+      setIsLoading(true);
       const res = await axios.post(`http://${Ip}/user/auth/login`, {
         email,
         password,
       });
 
-      // console.log(res);
+      console.log(res);
       if (res.status == 200) {
         console.log("Login");
         const to = await saveToken(res.data);
         console.log(res.data); // Handle response data
-
+        setIsLoading(false);
         navigation.navigate("HomeScreen");
       }
 
@@ -63,6 +66,8 @@ const Login = ({ navigation }) => {
         error.response?.data || error.message,
         ToastAndroid.SHORT
       );
+    } finally {
+      setIsLoading(false);
     }
     // };
 
@@ -139,13 +144,18 @@ const Login = ({ navigation }) => {
               style={{ alignItems: "flex-end", marginTop: 10 }}
               onPress={() => {
                 navigation.navigate("ForgetPassword");
-              }}>
+              }}
+              disabled={isLoading}>
               <Text>Forget password?</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.loginButton}
               onPress={loginValidation}>
-              <Text style={{ fontSize: 20, color: "white" }}>Login</Text>
+              {isLoading ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Text style={{ fontSize: 20, color: "white" }}>Login</Text>
+              )}
             </TouchableOpacity>
             <View
               style={{
@@ -153,13 +163,13 @@ const Login = ({ navigation }) => {
                 alignItems: "center",
                 marginTop: 20,
               }}>
-              <View style={{ flex: 1, height: 1, backgroundColor: "grey" }} />
+              {/* <View style={{ flex: 1, height: 1, backgroundColor: "grey" }} />
               <View>
                 <Text style={{ width: 50, textAlign: "center", color: "grey" }}>
                   Or
                 </Text>
               </View>
-              <View style={{ flex: 1, height: 1, backgroundColor: "grey" }} />
+              <View style={{ flex: 1, height: 1, backgroundColor: "grey" }} /> */}
             </View>
             {/* <TouchableOpacity
               style={styles.googleButton}

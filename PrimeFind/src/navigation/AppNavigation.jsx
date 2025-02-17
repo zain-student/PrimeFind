@@ -229,7 +229,7 @@ import {
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
-
+import { useState } from "react";
 // Import Screens
 import Welcome from "../screens/Welcome";
 import Register from "../screens/Register";
@@ -301,13 +301,13 @@ const AuthStackScreen = () => {
 };
 
 const TabNavigator = () => {
+  const [cart, setCart] = useState([]);
   return (
     <Tab.Navigator
     //  initialRouteName="HomeScreen"
     >
       <Tab.Screen
         name="HomeScreen"
-        component={HomeScreen}
         options={({ navigation }) => ({
           title: "Home",
           headerTitleAlign: "center",
@@ -322,18 +322,20 @@ const TabNavigator = () => {
               <Icon name="cart-outline" size={30} color="black" />
             </TouchableOpacity>
           ),
-        })}
-      />
-      <Tab.Screen
+        })}>
+        {(props) => <HomeScreen {...props} cart={cart} setCart={setCart} />}
+      </Tab.Screen>
+
+      {/* <Tab.Screen
         name="ProductScreen"
         component={ProductScreen}
         options={{
           headerShown: false,
-          tabBarIcon: ({ color }) => (
-            <Icon size={28} name="text-search" color={color} />
-          ),
+          // tabBarIcon: ({ color }) => (
+          //   <Icon size={28} name="text-search" color={color} />
+          // ),
         }}
-      />
+      /> */}
       <Tab.Screen
         name="You"
         component={AccountScreen} // Updated to AccountScreen
@@ -346,14 +348,14 @@ const TabNavigator = () => {
       />
       <Tab.Screen
         name="Cart"
-        component={Cart}
         options={{
           headerTitleAlign: "center",
           tabBarIcon: ({ color }) => (
             <Icon size={28} name="cart-outline" color={color} />
           ),
-        }}
-      />
+        }}>
+        {(props) => <Cart {...props} cart={cart} setCart={setCart} />}
+      </Tab.Screen>
     </Tab.Navigator>
   );
 };
@@ -376,6 +378,11 @@ const AppNavigation = () => {
           <Stack.Screen
             name="AuthStack"
             component={AuthStackScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="ProductScreen"
+            component={ProductScreen}
             options={{ headerShown: false }}
           />
         </Stack.Navigator>
